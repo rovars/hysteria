@@ -100,7 +100,6 @@ func NewUDPHopPacketConn(addr *UDPHopAddr, hopInterval HopIntervalConfig, listen
 		hConn.debugPrint("Initialized: local=%s target=%s interval=%s", curConn.LocalAddr(), addr, hopInterval)
 	}
 	go hConn.recvLoop(curConn)
-	go hConn.hopLoop()
 	return hConn, nil
 }
 
@@ -244,13 +243,14 @@ func (u *udpHopPacketConn) ReadFrom(b []byte) (n int, addr net.Addr, err error) 
 
 func (u *udpHopPacketConn) WriteTo(b []byte, addr net.Addr) (n int, err error) {
 	u.connMutex.RLock()
-	defer u.connMutex.RUnlock()
 	if u.closed {
+		u.connMutex.RUnlock()
 		return 0, net.ErrClosed
 	}
-	// Skip the check for now, always write to the server,
-	// for the same reason as in ReadFrom.
-	return u.currentConn.WriteTo(b, u.Addrs[u.addrIndex])
+	n, err = u.currentConn.WriteTo(b, u.Addrs[u.addrIndex])
+	u.addrIndex = (u.addrIndex + 1) % len(u.Addrs)
+	u.connMutex.RUnlock()
+	return
 }
 
 func (u *udpHopPacketConn) Close() error {
