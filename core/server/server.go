@@ -141,7 +141,12 @@ func newH3sHandler(config *Config, conn *quic.Conn) *h3sHandler {
 }
 
 func (h *h3sHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodPost && r.Host == protocol.URLHost && r.URL.Path == protocol.URLPath {
+	pm := protocol.Mode(h.config.ProtocolMode)
+	authHost := protocol.URLHost
+	if pm == protocol.ModeUz {
+		authHost = protocol.URLHostUz
+	}
+	if r.Method == http.MethodPost && r.Host == authHost && r.URL.Path == protocol.URLPath {
 		h.authMutex.Lock()
 		defer h.authMutex.Unlock()
 		if h.authenticated {
@@ -150,11 +155,11 @@ func (h *h3sHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				UDPEnabled: !h.config.DisableUDP,
 				Rx:         h.config.BandwidthConfig.MaxRx,
 				RxAuto:     h.config.IgnoreClientBandwidth,
-			})
+			}, pm)
 			w.WriteHeader(protocol.StatusAuthOK)
 			return
 		}
-		authReq := protocol.AuthRequestFromHeader(r.Header)
+		authReq := protocol.AuthRequestFromHeader(r.Header, pm)
 		actualTx := authReq.Rx
 		ok, id := h.config.Authenticator.Authenticate(h.conn.RemoteAddr(), authReq.Auth, actualTx)
 		if ok {
@@ -184,7 +189,7 @@ func (h *h3sHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				UDPEnabled: !h.config.DisableUDP,
 				Rx:         h.config.BandwidthConfig.MaxRx,
 				RxAuto:     h.config.IgnoreClientBandwidth,
-			})
+			}, pm)
 			w.WriteHeader(protocol.StatusAuthOK)
 			// Call event logger
 			if tl := h.config.TrafficLogger; tl != nil {

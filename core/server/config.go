@@ -16,6 +16,14 @@ import (
 	"github.com/apernet/quic-go"
 )
 
+// ProtocolMode defines the protocol variant used for authentication.
+type ProtocolMode int
+
+const (
+	ProtocolModeHy ProtocolMode = iota
+	ProtocolModeUz
+)
+
 const (
 	defaultStreamReceiveWindow = 8388608                            // 8MB
 	defaultConnReceiveWindow   = defaultStreamReceiveWindow * 5 / 2 // 20MB
@@ -40,6 +48,7 @@ type Config struct {
 	EventLogger           EventLogger
 	TrafficLogger         TrafficLogger
 	MasqHandler           http.Handler
+	ProtocolMode          ProtocolMode
 }
 
 // fill fills the fields that are not set by the user with default values when possible,

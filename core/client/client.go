@@ -106,11 +106,16 @@ func (c *clientImpl) connect() (*HandshakeInfo, error) {
 		},
 	}
 	// Send auth HTTP request
+	pm := protocol.Mode(c.config.ProtocolMode)
+	urlHost := protocol.URLHost
+	if pm == protocol.ModeUz {
+		urlHost = protocol.URLHostUz
+	}
 	req := &http.Request{
 		Method: http.MethodPost,
 		URL: &url.URL{
 			Scheme: "https",
-			Host:   protocol.URLHost,
+			Host:   urlHost,
 			Path:   protocol.URLPath,
 		},
 		Header: make(http.Header),
@@ -118,7 +123,7 @@ func (c *clientImpl) connect() (*HandshakeInfo, error) {
 	protocol.AuthRequestToHeader(req.Header, protocol.AuthRequest{
 		Auth: c.config.Auth,
 		Rx:   c.config.BandwidthConfig.MaxRx,
-	})
+	}, pm)
 	resp, err := rt.RoundTrip(req)
 	if err != nil {
 		if conn != nil {
@@ -135,7 +140,7 @@ func (c *clientImpl) connect() (*HandshakeInfo, error) {
 		return nil, coreErrs.AuthError{StatusCode: resp.StatusCode}
 	}
 	// Auth OK
-	authResp := protocol.AuthResponseFromHeader(resp.Header)
+	authResp := protocol.AuthResponseFromHeader(resp.Header, pm)
 	var actualTx uint64
 	if authResp.RxAuto {
 		// Server asks client to use bandwidth detection,

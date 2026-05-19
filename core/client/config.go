@@ -11,6 +11,14 @@ import (
 	"github.com/apernet/hysteria/core/v2/internal/pmtud"
 )
 
+// ProtocolMode defines the protocol variant used for authentication.
+type ProtocolMode int
+
+const (
+	ProtocolModeHy ProtocolMode = iota
+	ProtocolModeUz
+)
+
 const (
 	defaultStreamReceiveWindow = 8388608                            // 8MB
 	defaultConnReceiveWindow   = defaultStreamReceiveWindow * 5 / 2 // 20MB
@@ -26,6 +34,7 @@ type Config struct {
 	QUICConfig       QUICConfig
 	CongestionConfig CongestionConfig
 	BandwidthConfig  BandwidthConfig
+	ProtocolMode     ProtocolMode
 	FastOpen         bool
 
 	filled bool // whether the fields have been verified and filled
